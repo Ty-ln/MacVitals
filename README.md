@@ -7,7 +7,7 @@ A small menu bar app for MacBooks, built for fanless Airs. It shows system load,
     <td align="center" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/system-dark.png">
-        <img src="docs/screenshots/system-light.png" width="270" alt="System tab: CPU history chart above the thermal band, memory, top processes, battery, disk and network">
+        <img src="docs/screenshots/system-light.png" width="270" alt="System tab: CPU history chart above a temperature chart colored by thermal state, memory, top processes, battery, disk and network">
       </picture>
     </td>
     <td align="center" valign="top">
@@ -35,7 +35,7 @@ A small menu bar app for MacBooks, built for fanless Airs. It shows system load,
 ## Requirements
 
 - macOS 14 (Sonoma) or newer
-- Apple Silicon. Intel Macs work too, but the CPU line shows a meaningless "E 0%" and there is no temperature chart.
+- Apple Silicon. Intel Macs work too, but the CPU line shows a meaningless "E 0%" and the thermal state shows as a colored band instead of a temperature chart.
 - The Command Line Tools (`xcode-select --install`). You don't need Xcode.
 - [Homebrew](https://brew.sh) for the Brew tab. Without it, the tab shows a message and the rest of the app works normally.
 
@@ -73,7 +73,7 @@ Click the dots to open the dashboard.
 
 - **System:**
   - CPU load, split into performance and efficiency cores
-  - a 30-minute history: CPU load, then chip temperature, then the thermal state band, all on the same time axis, so you can see which load heated the Mac and when macOS started throttling
+  - a 30-minute history: CPU load above chip temperature, on the same time axis. The temperature chart is colored by the thermal state (green, amber, red), so you can see which load heated the Mac and when macOS started throttling.
   - memory used and swap
   - the top five processes
   - battery and power draw
@@ -85,7 +85,7 @@ Click the dots to open the dashboard.
   - The tab is read only. Run `brew upgrade` in your terminal to update.
 - **Settings** (gear icon):
   - dot colors
-  - chart style (area, line or bars), chart colors, and °C or °F
+  - chart style (area, line or bars), the CPU chart color, and °C or °F
   - how often to check Homebrew (1–24 hours, 6 by default)
   - launch at login
 
@@ -98,19 +98,19 @@ Pick a style in Settings › Charts. It applies to both charts. Area is the defa
     <td align="center" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/chart-styles/area-dark.png">
-        <img src="docs/screenshots/chart-styles/area-light.png" width="270" alt="Area style: CPU and temperature history above the thermal band">
+        <img src="docs/screenshots/chart-styles/area-light.png" width="270" alt="Area style: CPU history above the temperature history colored by thermal state">
       </picture>
     </td>
     <td align="center" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/chart-styles/line-dark.png">
-        <img src="docs/screenshots/chart-styles/line-light.png" width="270" alt="Line style: CPU and temperature history above the thermal band">
+        <img src="docs/screenshots/chart-styles/line-light.png" width="270" alt="Line style: CPU history above the temperature history colored by thermal state">
       </picture>
     </td>
     <td align="center" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/chart-styles/bars-dark.png">
-        <img src="docs/screenshots/chart-styles/bars-light.png" width="270" alt="Bars style: CPU and temperature history above the thermal band">
+        <img src="docs/screenshots/chart-styles/bars-light.png" width="270" alt="Bars style: CPU history above the temperature history colored by thermal state">
       </picture>
     </td>
   </tr>
@@ -143,7 +143,7 @@ The last line removes your saved settings.
 
 ## How it measures
 
-- **Throttling:** `ProcessInfo.thermalState`, the public signal macOS uses when it limits performance. `serious` and `critical` count as throttling. `fair` shows as amber in the dashboard only.
+- **Throttling:** `ProcessInfo.thermalState`, the public signal macOS uses when it limits performance. `serious` and `critical` count as throttling. `fair` shows as amber in the dashboard only. The thermal state colors the temperature chart.
 - **CPU:** per-core tick deltas from `host_processor_info`. On Apple Silicon the efficiency cores come first.
 - **Temperature:** the hottest of the chip's die sensors (`PMU tdie…`), read through IOKit's HID event system. The chart's scale is fixed at 20–110 °C, so it shows how much headroom is left before throttling.
 - **Memory:** app memory + wired + compressed, the same as Activity Monitor's "Memory Used".

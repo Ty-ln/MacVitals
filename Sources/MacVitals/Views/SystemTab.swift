@@ -164,26 +164,30 @@ private struct CPUThermalHistory: View {
                 .padding(.bottom, 4)
 
             if let temperature = state.temperature {
+                // The thermal state colors the temperature chart, so there's no separate band.
                 HStack {
                     Label("Temperature", systemImage: "thermometer.medium").foregroundStyle(.secondary)
                     Spacer()
                     Text(Format.temperature(temperature, unit: settings.temperatureUnit))
                         .monospacedDigit()
                         .help("Hottest SoC die sensor")
+                    Text("· \(state.thermalState.label)")
+                        .foregroundStyle(settings.color(for: state.thermalState))
                 }
                 HistoryChart(points: state.temperatureHistory, now: now, range: Self.temperatureRange,
-                             style: settings.chartStyle, color: settings.temperatureChartColor.color)
-                    .frame(height: 36)
-                    .padding(.bottom, 4)
+                             style: settings.chartStyle, color: settings.color(for: state.thermalState),
+                             tint: thermalTint(now: now))
+                    .frame(height: 40)
+            } else {
+                // No temperature sensors (e.g. Intel): show the thermal state as a band instead.
+                HStack {
+                    Label("Thermal", systemImage: "flame").foregroundStyle(.secondary)
+                    Spacer()
+                    Text(state.thermalState.label).foregroundStyle(settings.color(for: state.thermalState))
+                }
+                ThermalBand(history: state.thermalHistory, now: now, settings: settings)
+                    .frame(height: 6)
             }
-
-            HStack {
-                Label("Thermal", systemImage: "flame").foregroundStyle(.secondary)
-                Spacer()
-                Text(state.thermalState.label).foregroundStyle(settings.color(for: state.thermalState))
-            }
-            ThermalBand(history: state.thermalHistory, now: now, settings: settings)
-                .frame(height: 6)
             HStack {
                 Text("30 min ago")
                 Spacer()
@@ -194,6 +198,22 @@ private struct CPUThermalHistory: View {
         }
         .accessibilityElement(children: .combine)
     }
+
+    /// One colored time span per thermal state, from the thermal history.
+    private func thermalTint(now: Date) -> [ChartTint] {
+        let history = state.thermalHistory
+        return history.indices.map { i in
+            ChartTint(from: history[i].date,
+                      to: i + 1 < history.count ? history[i + 1].date : now,
+                      color: state.settings.color(for: history[i].state))
+        }
+    }
+}
+
+struct ChartTint {
+    let from: Date
+    let to: Date
+    let color: Color
 }
 
 /// A 30-minute history drawn as an area, a line, or bars. Gaps longer than a minute (sleep) break
@@ -204,24 +224,49 @@ private struct HistoryChart: View {
     let range: ClosedRange<Double>
     let style: ChartStyle
     let color: Color
+    /// Optional time spans that recolor the chart, e.g. by thermal state. Without them, `color` is used.
+    var tint: [ChartTint] = []
 
     private static let barCount = 60
 
     var body: some View {
         GeometryReader { geo in
+            if tint.isEmpty {
+                chart(color: color, size: geo.size)
+            } else {
+                ZStack(alignment: .topLeading) {
+                    ForEach(tint.indices, id: \.self) { i in
+                        let x = self.x(tint[i].from, width: geo.size.width)
+                        let width = max(self.x(tint[i].to, width: geo.size.width) - x, 0)
+                        chart(color: tint[i].color, size: geo.size)
+                            .mask(alignment: .topLeading) {
+                                Rectangle().frame(width: width, height: geo.size.height).offset(x: x)
+                            }
+                    }
+                }
+            }
+        }
+    }
+
+    private func x(_ date: Date, width: CGFloat) -> CGFloat {
+        min(max(date.timeIntervalSince(start) / ThermalMonitor.window, 0), 1) * width
+    }
+
+    @ViewBuilder private func chart(color: Color, size: CGSize) -> some View {
+        ZStack {
             switch style {
             case .area, .line:
-                let segments = self.segments(in: geo.size)
+                let segments = self.segments(in: size)
                 ZStack {
                     ForEach(segments.indices, id: \.self) { i in
                         if style == .area {
-                            area(segments[i], height: geo.size.height).fill(color.opacity(0.18))
+                            area(segments[i], height: size.height).fill(color.opacity(0.18))
                         }
                         line(segments[i]).stroke(color, style: StrokeStyle(lineWidth: 1.5, lineJoin: .round))
                     }
                 }
             case .bars:
-                bars(in: geo.size).fill(color.opacity(0.85))
+                bars(in: size).fill(color.opacity(0.85))
             }
         }
     }

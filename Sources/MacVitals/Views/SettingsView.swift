@@ -27,8 +27,7 @@ struct SettingsView: View {
                     ForEach(ChartStyle.allCases) { Text($0.title).tag($0) }
                 }
             }
-            SwatchRow(title: "CPU", options: chartOptions, selection: chartBinding(\.cpuChartColor))
-            SwatchRow(title: "Temperature", options: chartOptions, selection: chartBinding(\.temperatureChartColor))
+            SwatchRow(title: "CPU color", options: chartOptions, selection: chartBinding(\.cpuChartColor))
             LabeledRow(title: "Unit") {
                 Picker("Unit", selection: $settings.temperatureUnit) {
                     ForEach(TemperatureUnit.allCases) { Text($0.symbol).tag($0) }

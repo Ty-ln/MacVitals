@@ -66,13 +66,11 @@ final class Settings {
     static let brewIntervals = [1, 3, 6, 12, 24]
     private static let defaults: [StatusDot: DotColor] = [.normal: .green, .throttling: .red, .brew: .blue]
     static let defaultCPUChartColor = ChartColor.accent
-    static let defaultTemperatureChartColor = ChartColor.dot(.orange)
 
     var colors: [StatusDot: DotColor] { didSet { save() } }
     var brewIntervalHours: Int { didSet { save() } }
     var chartStyle: ChartStyle { didSet { save() } }
     var cpuChartColor: ChartColor { didSet { save() } }
-    var temperatureChartColor: ChartColor { didSet { save() } }
     var temperatureUnit: TemperatureUnit { didSet { save() } }
 
     init() {
@@ -84,8 +82,6 @@ final class Settings {
         brewIntervalHours = Self.brewIntervals.contains(hours) ? hours : 6
         chartStyle = store.string(forKey: "chartStyle").flatMap(ChartStyle.init) ?? .area
         cpuChartColor = store.string(forKey: "chartColor.cpu").flatMap(ChartColor.init) ?? Self.defaultCPUChartColor
-        temperatureChartColor = store.string(forKey: "chartColor.temperature").flatMap(ChartColor.init)
-            ?? Self.defaultTemperatureChartColor
         temperatureUnit = store.string(forKey: "temperatureUnit").flatMap(TemperatureUnit.init) ?? .celsius
     }
 
@@ -96,7 +92,6 @@ final class Settings {
     func resetCharts() {
         chartStyle = .area
         cpuChartColor = Self.defaultCPUChartColor
-        temperatureChartColor = Self.defaultTemperatureChartColor
         temperatureUnit = .celsius
     }
 
@@ -106,7 +101,6 @@ final class Settings {
         store.set(brewIntervalHours, forKey: "brewIntervalHours")
         store.set(chartStyle.rawValue, forKey: "chartStyle")
         store.set(cpuChartColor.rawValue, forKey: "chartColor.cpu")
-        store.set(temperatureChartColor.rawValue, forKey: "chartColor.temperature")
         store.set(temperatureUnit.rawValue, forKey: "temperatureUnit")
     }
 }

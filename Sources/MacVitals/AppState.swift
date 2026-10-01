@@ -128,14 +128,14 @@ final class AppState {
         let window = ThermalMonitor.window
         cpuHistory = stride(from: window, through: 0, by: -10).map { ago in
             let t = 1 - ago / window
-            let spike = exp(-pow((t - 0.75) / 0.12, 2)) * 0.65
-            return HistoryPoint(date: now.addingTimeInterval(-ago), value: min(0.12 + spike + 0.05 * sin(t * 40), 1))
+            let load = 0.6 / (1 + exp(-(t - 0.5) / 0.03))
+            return HistoryPoint(date: now.addingTimeInterval(-ago), value: min(0.12 + load + 0.05 * sin(t * 40), 1))
         }
-        // The die heats up after the load and cools down more slowly.
+        // The die heats up after the load starts and keeps climbing towards throttling.
         temperatureHistory = stride(from: window, through: 0, by: -10).map { ago in
             let t = 1 - ago / window
-            let heat = exp(-pow((t - 0.84) / 0.16, 2)) * 58
-            return HistoryPoint(date: now.addingTimeInterval(-ago), value: 36 + heat + 1.5 * sin(t * 25))
+            let heat = 58 / (1 + exp(-(t - 0.6) / 0.08))
+            return HistoryPoint(date: now.addingTimeInterval(-ago), value: 36 + heat + 1.2 * sin(t * 25))
         }
         temperature = temperatureHistory.last?.value
         thermalHistory = [
@@ -144,7 +144,7 @@ final class AppState {
             ThermalEvent(date: now.addingTimeInterval(-window * 0.18), state: .serious),
         ]
         thermalState = .serious
-        cpu = CPUSample(total: cpuHistory.last?.value ?? 0, performance: 0.41, efficiency: 0.22)
+        cpu = CPUSample(total: cpuHistory.last?.value ?? 0, performance: 0.94, efficiency: 0.64)
 
         let gb: UInt64 = 1 << 30, mb: UInt64 = 1 << 20
         memory = MemorySample(used: gb * 112 / 10, total: 16 * gb, swapUsed: gb * 8 / 10, pressure: .normal)
