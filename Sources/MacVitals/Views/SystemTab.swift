@@ -7,13 +7,8 @@ struct SystemTab: View {
         VStack(alignment: .leading, spacing: 8) {
             ThermalBanner(state: state.thermalState, history: state.thermalHistory, now: state.lastUpdate, settings: state.settings)
 
-            MetricBar(
-                title: "CPU",
-                value: Format.percent(state.cpu.total),
-                detail: "P \(Format.percent(state.cpu.performance)) · E \(Format.percent(state.cpu.efficiency))",
-                fraction: state.cpu.total,
-                color: loadColor(state.cpu.total)
-            )
+            CPUThermalHistory(state: state)
+
             MetricBar(
                 title: "Memory",
                 value: "\(Format.gb(state.memory.used)) / \(Format.gb(state.memory.total, decimals: 0)) GB",
@@ -21,8 +16,6 @@ struct SystemTab: View {
                 fraction: state.memory.fraction,
                 color: pressureColor
             )
-
-            ThermalTimeline(history: state.thermalHistory, current: state.thermalState, now: state.lastUpdate, settings: state.settings)
 
             SectionHeader(title: "Top processes")
             if state.processes.isEmpty {
@@ -74,9 +67,6 @@ struct SystemTab: View {
         }
     }
 
-    private func loadColor(_ fraction: Double) -> Color {
-        fraction > 0.9 ? .red : fraction > 0.7 ? .orange : .accentColor
-    }
 }
 
 private struct MetricBar: View {
@@ -149,34 +139,112 @@ private struct ThermalBanner: View {
     }
 }
 
-private struct ThermalTimeline: View {
+/// CPU load chart with the thermal state band underneath, on one shared 30-minute time axis.
+private struct CPUThermalHistory: View {
+    let state: AppState
+
+    var body: some View {
+        let now = state.lastUpdate
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("CPU").foregroundStyle(.secondary)
+                Spacer()
+                Text(Format.percent(state.cpu.total)).monospacedDigit()
+                Text("· P \(Format.percent(state.cpu.performance)) · E \(Format.percent(state.cpu.efficiency))")
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            CPUSparkline(points: state.cpuHistory, now: now)
+                .frame(height: 36)
+                .padding(.bottom, 4)
+
+            HStack {
+                Label("Thermal", systemImage: "thermometer.medium").foregroundStyle(.secondary)
+                Spacer()
+                Text(state.thermalState.label).foregroundStyle(state.settings.color(for: state.thermalState))
+            }
+            ThermalBand(history: state.thermalHistory, now: now, settings: state.settings)
+                .frame(height: 6)
+            HStack {
+                Text("30 min ago")
+                Spacer()
+                Text("now")
+            }
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Area chart of CPU load. Gaps longer than a minute (sleep) break the line.
+private struct CPUSparkline: View {
+    let points: [CPUPoint]
+    let now: Date
+
+    var body: some View {
+        GeometryReader { geo in
+            let segments = self.segments(in: geo.size)
+            ZStack {
+                ForEach(segments.indices, id: \.self) { i in
+                    area(segments[i], height: geo.size.height).fill(Color.accentColor.opacity(0.18))
+                    line(segments[i]).stroke(Color.accentColor, style: StrokeStyle(lineWidth: 1.5, lineJoin: .round))
+                }
+            }
+        }
+    }
+
+    private func segments(in size: CGSize) -> [[CGPoint]] {
+        let start = now.addingTimeInterval(-ThermalMonitor.window)
+        var result: [[CGPoint]] = []
+        var previous: Date?
+        for point in points where point.date >= start {
+            let x = point.date.timeIntervalSince(start) / ThermalMonitor.window * size.width
+            let y = 1 + (size.height - 2) * (1 - min(max(point.load, 0), 1))
+            if let previous, point.date.timeIntervalSince(previous) <= 60, !result.isEmpty {
+                result[result.count - 1].append(CGPoint(x: x, y: y))
+            } else {
+                result.append([CGPoint(x: x, y: y)])
+            }
+            previous = point.date
+        }
+        return result.filter { $0.count > 1 }
+    }
+
+    private func line(_ points: [CGPoint]) -> Path {
+        Path { $0.addLines(points) }
+    }
+
+    private func area(_ points: [CGPoint], height: CGFloat) -> Path {
+        Path { path in
+            guard let first = points.first, let last = points.last else { return }
+            path.move(to: CGPoint(x: first.x, y: height))
+            path.addLines(points)
+            path.addLine(to: CGPoint(x: last.x, y: height))
+            path.closeSubpath()
+        }
+    }
+}
+
+private struct ThermalBand: View {
     let history: [ThermalEvent]
-    let current: ProcessInfo.ThermalState
     let now: Date
     let settings: Settings
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text("Thermal, last 30 min").foregroundStyle(.secondary)
-                Spacer()
-                Text(current.label).foregroundStyle(settings.color(for: current))
-            }
-            GeometryReader { geo in
-                let start = now.addingTimeInterval(-ThermalMonitor.window)
-                ZStack(alignment: .leading) {
-                    Capsule().fill(.quaternary)
-                    ForEach(Array(history.enumerated()), id: \.offset) { i, event in
-                        let from = max(event.date, start)
-                        let to = i + 1 < history.count ? history[i + 1].date : now
-                        let x = from.timeIntervalSince(start) / ThermalMonitor.window * geo.size.width
-                        let w = max(to.timeIntervalSince(from), 0) / ThermalMonitor.window * geo.size.width
-                        Rectangle().fill(settings.color(for: event.state)).frame(width: w).offset(x: x)
-                    }
+        GeometryReader { geo in
+            let start = now.addingTimeInterval(-ThermalMonitor.window)
+            ZStack(alignment: .leading) {
+                Capsule().fill(.quaternary)
+                ForEach(Array(history.enumerated()), id: \.offset) { i, event in
+                    let from = max(event.date, start)
+                    let to = i + 1 < history.count ? history[i + 1].date : now
+                    let x = from.timeIntervalSince(start) / ThermalMonitor.window * geo.size.width
+                    let w = max(to.timeIntervalSince(from), 0) / ThermalMonitor.window * geo.size.width
+                    Rectangle().fill(settings.color(for: event.state)).frame(width: w).offset(x: x)
                 }
-                .clipShape(Capsule())
             }
-            .frame(height: 6)
+            .clipShape(Capsule())
         }
     }
 }

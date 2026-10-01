@@ -6,6 +6,7 @@ import Observation
 @Observable
 final class AppState {
     var cpu = CPUSample()
+    var cpuHistory: [CPUPoint] = []
     var memory = MemorySample()
     var thermalState: ProcessInfo.ThermalState
     var thermalHistory: [ThermalEvent] = []
@@ -62,6 +63,7 @@ final class AppState {
 
     func refresh() {
         cpu = cpuMonitor.sample()
+        recordCPU()
         memory = MemoryMonitor.sample()
         power = PowerMonitor.sample()
         disk = DiskMonitor.sample()
@@ -99,6 +101,34 @@ final class AppState {
                 }
             }
         }
+    }
+
+    /// Keeps the same 30-minute window as the thermal history.
+    private func recordCPU() {
+        let now = Date()
+        cpuHistory.append(CPUPoint(date: now, load: cpu.total))
+        let cutoff = now.addingTimeInterval(-ThermalMonitor.window)
+        if let first = cpuHistory.firstIndex(where: { $0.date >= cutoff }), first > 0 {
+            cpuHistory.removeFirst(first)
+        }
+    }
+
+    /// Fills both histories with a made-up load spike and heat-up, for `--snapshot --demo`.
+    func seedDemo() {
+        let now = Date()
+        let window = ThermalMonitor.window
+        cpuHistory = stride(from: window, through: 0, by: -10).map { ago in
+            let t = 1 - ago / window
+            let spike = exp(-pow((t - 0.75) / 0.12, 2)) * 0.65
+            return CPUPoint(date: now.addingTimeInterval(-ago), load: min(0.12 + spike + 0.05 * sin(t * 40), 1))
+        }
+        thermalHistory = [
+            ThermalEvent(date: now.addingTimeInterval(-window), state: .nominal),
+            ThermalEvent(date: now.addingTimeInterval(-window * 0.42), state: .fair),
+            ThermalEvent(date: now.addingTimeInterval(-window * 0.18), state: .serious),
+        ]
+        thermalState = .serious
+        cpu = CPUSample(total: cpuHistory.last?.load ?? 0, performance: 0.41, efficiency: 0.22)
     }
 
     private func syncThermal() {

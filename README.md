@@ -40,8 +40,8 @@ Click the dots to open the dashboard.
 
 - **System:**
   - CPU load, split into performance and efficiency cores
+  - a 30-minute history: a CPU chart with the thermal state band underneath on the same time axis, so you can see which load heated the Mac
   - memory used and swap
-  - a 30-minute thermal timeline
   - the top five processes
   - battery and power draw
   - free disk space and network throughput
@@ -81,7 +81,7 @@ The last line removes your saved settings.
 - **CPU:** per-core tick deltas from `host_processor_info`. On Apple Silicon the efficiency cores come first.
 - **Memory:** app memory + wired + compressed, the same as Activity Monitor's "Memory Used".
 - **Brew:** `brew update` + `brew outdated --json=v2`. This runs at launch, on the interval set in Settings, and when you click "Check now".
-- **Sampling:** every 10 s in the background and every 2 s while the dashboard is open. Top processes are only read while the dashboard is open.
+- **Sampling:** every 10 s in the background and every 2 s while the dashboard is open. The last 30 minutes of CPU samples are kept for the chart. Top processes are only read while the dashboard is open.
 
 Everything uses public APIs or `sysctl`, so MacVitals needs no root access and no helper tools.
 
@@ -95,7 +95,8 @@ swift build                     # debug build
 MACVITALS_FAKE_THERMAL=serious ~/Applications/MacVitals.app/Contents/MacOS/MacVitals
 
 # Render both tabs, settings, and the dot states to PNGs without opening anything
-.build/release/MacVitals --snapshot /tmp/macvitals
+# (add --demo to fill the CPU and thermal history with made-up data)
+.build/release/MacVitals --snapshot /tmp/macvitals --demo
 
 # Turn launch at login on or off from the command line
 ~/Applications/MacVitals.app/Contents/MacOS/MacVitals --login-item on

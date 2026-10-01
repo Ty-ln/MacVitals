@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// `MacVitals --snapshot <dir>` renders both dashboard tabs and the status dots to PNGs, then quits.
+/// `MacVitals --snapshot <dir> [--demo]` renders both dashboard tabs and the status dots to PNGs, then quits.
 /// Uses an off-screen window, so it needs no screen recording permission.
 enum Snapshot {
     static var directory: String? {
@@ -16,6 +16,7 @@ enum Snapshot {
         Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
             guard !state.brewChecking, !state.processes.isEmpty else { return }
             timer.invalidate()
+            if CommandLine.arguments.contains("--demo") { state.seedDemo() }
             for mode in ["light", "dark"] {
                 render(DashboardView(state: state, initialTab: .system), mode: mode, to: "\(dir)/system-\(mode).png")
                 render(DashboardView(state: state, initialTab: .brew), mode: mode, to: "\(dir)/brew-\(mode).png")

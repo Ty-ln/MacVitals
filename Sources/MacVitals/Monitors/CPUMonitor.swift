@@ -1,9 +1,14 @@
-import Darwin
+import Foundation
 
 struct CPUSample {
     var total: Double = 0        // 0...1
     var performance: Double = 0  // 0...1
     var efficiency: Double = 0   // 0...1
+}
+
+struct CPUPoint {
+    let date: Date
+    let load: Double  // 0...1
 }
 
 /// Per-core load from host_processor_info tick deltas.
