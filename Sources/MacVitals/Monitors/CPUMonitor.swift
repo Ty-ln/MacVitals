@@ -4,6 +4,8 @@ struct CPUSample {
     var total: Double = 0        // 0...1
     var performance: Double = 0  // 0...1
     var efficiency: Double = 0   // 0...1
+    /// False on Macs without efficiency cores (Intel), where the P/E split means nothing.
+    var hasCoreTypes = false
 }
 
 /// One sample in a chart history (CPU load 0...1, or temperature in °C).
@@ -24,7 +26,7 @@ final class CPUMonitor {
         var infoCount: mach_msg_type_number_t = 0
         guard host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO,
                                   &cpuCount, &info, &infoCount) == KERN_SUCCESS,
-              let info else { return CPUSample() }
+              let info else { return CPUSample(hasCoreTypes: efficiencyCount > 0) }
         defer {
             vm_deallocate(mach_task_self_, vm_address_t(bitPattern: info),
                           vm_size_t(Int(infoCount) * MemoryLayout<integer_t>.stride))
@@ -38,7 +40,7 @@ final class CPUMonitor {
             current.append((busy, busy + ticks(CPU_STATE_IDLE)))
         }
         defer { previous = current }
-        guard previous.count == current.count else { return CPUSample() }
+        guard previous.count == current.count else { return CPUSample(hasCoreTypes: efficiencyCount > 0) }
 
         var all = (busy: 0.0, total: 0.0), eff = all, perf = all
         for (i, (now, before)) in zip(current, previous).enumerated() {
@@ -48,6 +50,7 @@ final class CPUMonitor {
             else { perf.busy += busy; perf.total += total }
         }
         func ratio(_ p: (busy: Double, total: Double)) -> Double { p.total > 0 ? p.busy / p.total : 0 }
-        return CPUSample(total: ratio(all), performance: ratio(perf), efficiency: ratio(eff))
+        return CPUSample(total: ratio(all), performance: ratio(perf), efficiency: ratio(eff),
+                         hasCoreTypes: efficiencyCount > 0)
     }
 }

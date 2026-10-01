@@ -144,7 +144,7 @@ final class AppState {
             ThermalEvent(date: now.addingTimeInterval(-window * 0.18), state: .serious),
         ]
         thermalState = .serious
-        cpu = CPUSample(total: cpuHistory.last?.value ?? 0, performance: 0.94, efficiency: 0.64)
+        cpu = CPUSample(total: cpuHistory.last?.value ?? 0, performance: 0.94, efficiency: 0.64, hasCoreTypes: true)
 
         let gb: UInt64 = 1 << 30, mb: UInt64 = 1 << 20
         memory = MemorySample(used: gb * 112 / 10, total: 16 * gb, swapUsed: gb * 8 / 10, pressure: .normal)

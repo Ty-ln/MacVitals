@@ -35,7 +35,7 @@ A small menu bar app for MacBooks, built for fanless Airs. It shows system load,
 ## Requirements
 
 - macOS 14 (Sonoma) or newer
-- Apple Silicon. Intel Macs work too, but the CPU line shows a meaningless "E 0%" and the thermal state shows as a colored band instead of a temperature chart.
+- Apple Silicon. Intel Macs work too: the CPU line shows total load without the performance and efficiency core split, and the thermal state shows as a colored band instead of a temperature chart.
 - The Command Line Tools (`xcode-select --install`). You don't need Xcode.
 - [Homebrew](https://brew.sh) for the Brew tab. Without it, the tab shows a message and the rest of the app works normally.
 

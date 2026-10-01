@@ -154,9 +154,11 @@ private struct CPUThermalHistory: View {
                 Text("CPU").foregroundStyle(.secondary)
                 Spacer()
                 Text(Format.percent(state.cpu.total)).monospacedDigit()
-                Text("· P \(Format.percent(state.cpu.performance)) · E \(Format.percent(state.cpu.efficiency))")
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
+                if state.cpu.hasCoreTypes {
+                    Text("· P \(Format.percent(state.cpu.performance)) · E \(Format.percent(state.cpu.efficiency))")
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
             }
             HistoryChart(points: state.cpuHistory, now: now, range: 0...1,
                          style: settings.chartStyle, color: settings.cpuChartColor.color)
