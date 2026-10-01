@@ -113,7 +113,8 @@ final class AppState {
         }
     }
 
-    /// Fills both histories with a made-up load spike and heat-up, for `--snapshot --demo`.
+    /// Replaces every reading with made-up sample data, for `--snapshot --demo`.
+    /// Used for the README screenshots, so they don't show this Mac's processes or packages.
     func seedDemo() {
         let now = Date()
         let window = ThermalMonitor.window
@@ -129,6 +130,32 @@ final class AppState {
         ]
         thermalState = .serious
         cpu = CPUSample(total: cpuHistory.last?.load ?? 0, performance: 0.41, efficiency: 0.22)
+
+        let gb: UInt64 = 1 << 30, mb: UInt64 = 1 << 20
+        memory = MemorySample(used: gb * 112 / 10, total: 16 * gb, swapUsed: gb * 8 / 10, pressure: .normal)
+        processes = [
+            ProcessUsage(id: 1, name: "Xcode", cpu: 182, memory: gb * 21 / 10),
+            ProcessUsage(id: 2, name: "Google Chrome Helper", cpu: 64, memory: gb * 14 / 10),
+            ProcessUsage(id: 3, name: "node", cpu: 31, memory: 620 * mb),
+            ProcessUsage(id: 4, name: "WindowServer", cpu: 18, memory: 150 * mb),
+            ProcessUsage(id: 5, name: "Spotify", cpu: 6, memory: 310 * mb),
+        ]
+        power = PowerSample(percent: 64, isCharging: false, onAdapter: false,
+                            minutesRemaining: 190, watts: -14.2, lowPowerMode: false)
+        disk = DiskSample(free: 212_000_000_000, total: 494_000_000_000)
+        net = NetSample(downPerSecond: 1_200_000, upPerSecond: 80_000)
+
+        brew = BrewResult(
+            formulae: [
+                OutdatedPackage(name: "node", installed: "24.8.0", latest: "24.9.1"),
+                OutdatedPackage(name: "git", installed: "2.51.0", latest: "2.51.1"),
+                OutdatedPackage(name: "ffmpeg", installed: "8.0", latest: "8.0.1"),
+            ],
+            casks: [OutdatedPackage(name: "visual-studio-code", installed: "1.104.2", latest: "1.105.0")]
+        )
+        brewError = nil
+        brewChecking = false
+        brewLastChecked = now.addingTimeInterval(-38 * 60)
     }
 
     private func syncThermal() {

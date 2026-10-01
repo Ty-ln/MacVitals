@@ -2,6 +2,36 @@
 
 A small menu bar app for MacBooks, built for fanless Airs. It shows system load, tells you when macOS starts thermal throttling, and lists pending Homebrew updates.
 
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/system-dark.png">
+        <img src="docs/screenshots/system-light.png" width="270" alt="System tab: CPU history chart above the thermal band, memory, top processes, battery, disk and network">
+      </picture>
+    </td>
+    <td align="center" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/brew-dark.png">
+        <img src="docs/screenshots/brew-light.png" width="270" alt="Brew tab: outdated formulae and casks with installed and latest versions">
+      </picture>
+    </td>
+    <td align="center" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
+        <img src="docs/screenshots/settings-light.png" width="270" alt="Settings: dot colors, brew check interval and launch at login">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">System</td>
+    <td align="center">Brew</td>
+    <td align="center">Settings</td>
+  </tr>
+</table>
+
+<sub>Screenshots use demo data, rendered with <code>--snapshot docs/screenshots --demo</code>.</sub>
+
 ## Requirements
 
 - macOS 14 (Sonoma) or newer
@@ -28,11 +58,14 @@ If you copy a built `MacVitals.app` to another Mac instead of building it there,
 
 ### Menu bar dots
 
-| Dot | Meaning |
+| Menu bar | Meaning |
 | --- | --- |
-| 🟢 | Normal |
-| 🔴 | Throttling: macOS is limiting performance because the Mac is too hot |
-| 🔵 | Homebrew updates are pending (shown next to the green or red dot) |
+| <img src="docs/screenshots/dots-normal.png" height="16" alt=""> | Normal |
+| <img src="docs/screenshots/dots-throttling.png" height="16" alt=""> | Throttling: macOS is limiting performance because the Mac is too hot |
+| <img src="docs/screenshots/dots-brew.png" height="16" alt=""> | Homebrew updates are pending |
+| <img src="docs/screenshots/dots-both.png" height="16" alt=""> | Throttling and Homebrew updates pending |
+
+The colors can be changed in Settings.
 
 ### Dashboard
 
@@ -94,9 +127,9 @@ swift build                     # debug build
 # Force a thermal state to see the red dot and banner (nominal, fair, serious, critical)
 MACVITALS_FAKE_THERMAL=serious ~/Applications/MacVitals.app/Contents/MacOS/MacVitals
 
-# Render both tabs, settings, and the dot states to PNGs without opening anything
-# (add --demo to fill the CPU and thermal history with made-up data)
-.build/release/MacVitals --snapshot /tmp/macvitals --demo
+# Render both tabs, settings, and the dot states to PNGs without opening anything.
+# --demo replaces all readings with sample data; this is how the README screenshots are made.
+.build/release/MacVitals --snapshot docs/screenshots --demo
 
 # Turn launch at login on or off from the command line
 ~/Applications/MacVitals.app/Contents/MacOS/MacVitals --login-item on
