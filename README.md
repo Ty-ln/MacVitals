@@ -36,10 +36,20 @@ A small menu bar app for MacBooks, built for fanless Airs. It shows system load,
 
 - macOS 14 (Sonoma) or newer
 - Apple Silicon. Intel Macs work too: the CPU line shows total load without the performance and efficiency core split, and the thermal state shows as a colored band instead of a temperature chart.
-- The Command Line Tools (`xcode-select --install`). You don't need Xcode.
+- To build from source: the Command Line Tools (`xcode-select --install`). You don't need Xcode.
 - [Homebrew](https://brew.sh) for the Brew tab. Without it, the tab shows a message and the rest of the app works normally.
 
 ## Install
+
+### Download (Apple Silicon)
+
+1. Download `MacVitals-<version>.zip` from the [latest release](https://github.com/Ty-ln/MacVitals/releases/latest) and unzip it.
+2. Move `MacVitals.app` to your Applications folder and open it.
+3. macOS blocks it the first time, because the app isn't notarized by Apple. Open System Settings › Privacy & Security, scroll to the message about MacVitals, and click **Open Anyway**. After that it opens normally.
+
+### Build from source
+
+You need the Command Line Tools for this. It works on Intel Macs too, and macOS doesn't block an app you built yourself.
 
 ```bash
 git clone https://github.com/Ty-ln/MacVitals.git
@@ -50,9 +60,9 @@ open ~/Applications/MacVitals.app
 
 `build.sh` compiles a release build, wraps it in `MacVitals.app`, signs it ad hoc, and installs it to `~/Applications`. If MacVitals is already running, the script quits it first.
 
-The app has no Dock icon. Look for the colored dots in the menu bar. To start it automatically, open Settings (gear icon) and turn on **Launch at login**. If macOS asks, approve it in System Settings › General › Login Items.
+### After installing
 
-If you copy a built `MacVitals.app` to another Mac instead of building it there, Gatekeeper blocks it on first launch because it isn't notarized. Right-click the app and choose Open once to allow it.
+The app has no Dock icon. Look for the colored dots in the menu bar. To start it automatically, open Settings (gear icon) and turn on **Launch at login**. If macOS asks, approve it in System Settings › General › Login Items.
 
 ## Usage
 
@@ -123,6 +133,8 @@ Pick a style in Settings › Charts. It applies to both charts. Area is the defa
 
 ## Update
 
+If you downloaded the app, download the newest release and replace `MacVitals.app` with it. If you built it yourself:
+
 ```bash
 cd MacVitals
 git pull
@@ -131,6 +143,8 @@ open ~/Applications/MacVitals.app
 ```
 
 ## Uninstall
+
+These commands use the path `build.sh` installs to. If you downloaded the app, replace `~/Applications` with `/Applications`.
 
 ```bash
 ~/Applications/MacVitals.app/Contents/MacOS/MacVitals --login-item off
