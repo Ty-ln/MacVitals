@@ -1,3 +1,17 @@
+# SwiftPM build output
 .build/
+.swiftpm/
+Package.resolved
+
+# App bundle assembled by build.sh
 build/
+
+# Editors
+.vscode/
+.idea/
+*.xcodeproj/
+xcuserdata/
+*.swp
+
+# macOS
 .DS_Store
