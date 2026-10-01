@@ -13,7 +13,7 @@ struct BrewResult {
     var count: Int { formulae.count + casks.count }
 }
 
-/// Runs `brew update` then `brew outdated --json=v2`. Read only: it never upgrades anything.
+/// Runs `brew update` (optional) then `brew outdated --json=v2`. Read only: it never upgrades anything.
 enum BrewChecker {
     static let brewPath: String? = ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"]
         .first { FileManager.default.isExecutableFile(atPath: $0) }
@@ -28,7 +28,7 @@ enum BrewChecker {
         }
     }
 
-    static func check() -> Result<BrewResult, Failure> {
+    static func check(update: Bool = true) -> Result<BrewResult, Failure> {
         guard let brew = brewPath else { return .failure(.notInstalled) }
         let prefix = (brew as NSString).deletingLastPathComponent
         let env = [
@@ -39,7 +39,9 @@ enum BrewChecker {
         ]
 
         // A failed update (offline) still leaves usable local metadata, so carry on.
-        _ = Shell.run(brew, ["update", "--quiet"], env: env, timeout: 120)
+        if update {
+            _ = Shell.run(brew, ["update", "--quiet"], env: env, timeout: 120)
+        }
 
         var outdatedEnv = env
         outdatedEnv["HOMEBREW_NO_AUTO_UPDATE"] = "1"

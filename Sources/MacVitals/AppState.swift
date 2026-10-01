@@ -22,6 +22,10 @@ final class AppState {
     var brewError: String?
     var brewChecking = false
     var brewLastChecked: Date?
+    /// Last check that ran `brew update`; the interval in Settings counts from here.
+    @ObservationIgnored private var brewLastUpdated: Date?
+    /// Homebrew changes caused by our own check are ignored until then.
+    @ObservationIgnored private var brewIgnoreChangesUntil = Date.distantPast
 
     let settings = Settings()
 
@@ -38,6 +42,7 @@ final class AppState {
     @ObservationIgnored private let thermal = ThermalMonitor()
     @ObservationIgnored private let temperatureMonitor = TemperatureMonitor()
     @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var brewWatcher: BrewWatcher?
 
     init() {
         thermalState = thermal.state
@@ -45,6 +50,8 @@ final class AppState {
         thermal.onChange = { [weak self] in self?.syncThermal() }
         refresh()
         schedule()
+        // Refresh the Brew tab right after you upgrade or update in the terminal.
+        brewWatcher = BrewWatcher { [weak self] in self?.brewChanged() }
     }
 
     var isThrottling: Bool { thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue }
@@ -62,7 +69,7 @@ final class AppState {
         return "MacVitals: " + parts.joined(separator: ", ")
     }
 
-    var brewNextCheck: Date? { brewLastChecked?.addingTimeInterval(TimeInterval(settings.brewIntervalHours) * 3600) }
+    var brewNextCheck: Date? { brewLastUpdated?.addingTimeInterval(TimeInterval(settings.brewIntervalHours) * 3600) }
 
     func refresh() {
         cpu = cpuMonitor.sample()
@@ -87,14 +94,19 @@ final class AppState {
         checkBrew()
     }
 
-    func checkBrew() {
+    /// `update: false` skips `brew update`, for rechecks after Homebrew changed locally.
+    func checkBrew(update: Bool = true) {
         guard !brewChecking else { return }
         brewChecking = true
         DispatchQueue.global(qos: .utility).async {
-            let result = BrewChecker.check()
+            let result = BrewChecker.check(update: update)
             DispatchQueue.main.async {
+                let now = Date()
                 self.brewChecking = false
-                self.brewLastChecked = Date()
+                self.brewLastChecked = now
+                if update { self.brewLastUpdated = now }
+                // Our own `brew update` touches the watched cache; don't react to that.
+                self.brewIgnoreChangesUntil = now.addingTimeInterval(10)
                 switch result {
                 case .success(let value):
                     self.brew = value
@@ -105,6 +117,11 @@ final class AppState {
                 }
             }
         }
+    }
+
+    private func brewChanged() {
+        guard !brewChecking, Date() > brewIgnoreChangesUntil else { return }
+        checkBrew(update: false)
     }
 
     /// Keeps the same 30-minute window as the thermal history.

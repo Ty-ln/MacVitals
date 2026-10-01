@@ -81,7 +81,7 @@ Click the dots to open the dashboard.
 - **Banner:** when the Mac runs warm, an amber banner appears; when it throttles, a red one.
 - **Brew:**
   - outdated formulae and casks, with the installed and latest versions
-  - "Check now" to refresh
+  - "Check now" to refresh. It also refreshes on its own a few seconds after you upgrade or update in the terminal.
   - The tab is read only. Run `brew upgrade` in your terminal to update.
 - **Settings** (gear icon):
   - dot colors
@@ -148,6 +148,7 @@ The last line removes your saved settings.
 - **Temperature:** the hottest of the chip's die sensors (`PMU tdie…`), read through IOKit's HID event system. The chart's scale is fixed at 20–110 °C, so it shows how much headroom is left before throttling.
 - **Memory:** app memory + wired + compressed, the same as Activity Monitor's "Memory Used".
 - **Brew:** `brew update` + `brew outdated --json=v2`. This runs at launch, on the interval set in Settings, and when you click "Check now".
+- **Brew changes from the terminal:** MacVitals watches Homebrew's `Cellar`, `Caskroom` and download cache. When you run `brew upgrade`, `install`, `uninstall` or `update`, it waits until Homebrew has been quiet for 5 seconds, then reruns `brew outdated` (no network needed). The blue dot and the Brew tab update on their own.
 - **Sampling:** every 10 s in the background and every 2 s while the dashboard is open. The last 30 minutes of CPU and temperature samples are kept for the charts. Top processes are only read while the dashboard is open.
 
 MacVitals needs no root access and no helper tools. Everything uses public APIs or `sysctl`, except temperature: macOS has no public temperature API on Apple Silicon, so MacVitals uses undocumented IOKit functions, as the open-source [Stats](https://github.com/exelban/stats) app does. If a future macOS update breaks them, only the temperature chart disappears.
