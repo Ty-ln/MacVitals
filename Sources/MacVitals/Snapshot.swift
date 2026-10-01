@@ -24,7 +24,12 @@ enum Snapshot {
             }
             for (name, dots) in [("normal", [StatusDot.normal]), ("brew", [.normal, .brew]),
                                  ("throttling", [.throttling]), ("both", [.throttling, .brew])] {
-                write(StatusDots.image(for: dots, settings: state.settings), to: "\(dir)/dots-\(name).png")
+                for (mode, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+                    NSAppearance(named: appearance)!.performAsCurrentDrawingAppearance {
+                        write(StatusDots.image(for: dots, settings: state.settings, dark: mode == "dark"),
+                              to: "\(dir)/dots-\(name)-\(mode).png")
+                    }
+                }
             }
             NSApp.terminate(nil)
         }

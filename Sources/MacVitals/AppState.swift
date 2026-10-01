@@ -17,6 +17,8 @@ final class AppState {
     var disk: DiskSample?
     var net = NetSample()
     var lastUpdate = Date()
+    /// System dark mode. The menu bar cat is redrawn when it changes.
+    var darkMode = AppState.systemIsDark()
 
     var brew: BrewResult?
     var brewError: String?
@@ -52,6 +54,13 @@ final class AppState {
         schedule()
         // Refresh the Brew tab right after you upgrade or update in the terminal.
         brewWatcher = BrewWatcher { [weak self] in self?.brewChanged() }
+        DistributedNotificationCenter.default().addObserver(
+            forName: Notification.Name("AppleInterfaceThemeChangedNotification"), object: nil, queue: .main
+        ) { [weak self] _ in self?.darkMode = AppState.systemIsDark() }
+    }
+
+    private static func systemIsDark() -> Bool {
+        UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
     }
 
     var isThrottling: Bool { thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue }

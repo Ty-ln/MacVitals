@@ -1,27 +1,29 @@
+<p align="center"><img src="Icon/AppIcon-256.png" width="128" alt="MacVitals icon: a line drawing of a happy cat"></p>
+
 # MacVitals
 
 A small menu bar app for MacBooks, built for fanless Airs. It shows system load, tells you when macOS starts thermal throttling, and lists pending Homebrew updates.
 
-MacBook Airs have no fan. Under sustained load, such as a long build, a video export or a pile of browser tabs, the chip heats up and macOS quietly lowers its speed to cool it down. Everything keeps working, just slower, and nothing tells you. MacVitals sits in your menu bar as a single colored dot. The dot turns red as soon as macOS starts throttling, and the dashboard shows you what caused it. It also keeps an eye on Homebrew, so you know when updates are waiting.
+MacBook Airs have no fan. Under sustained load, such as a long build, a video export or a pile of browser tabs, the chip heats up and macOS quietly lowers its speed to cool it down. Everything keeps working, just slower, and nothing tells you. MacVitals sits in your menu bar as a small cat with a colored status dot. The dot turns red as soon as macOS starts throttling, and the dashboard shows you what caused it. It also keeps an eye on Homebrew, so you know when updates are waiting.
 
 <table>
   <tr>
     <td align="center" valign="top">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2/system-dark.png">
-        <img src="docs/screenshots/v2/system-light.png" width="270" alt="System tab: CPU history chart above a temperature chart colored by thermal state, memory, top processes, battery, disk and network">
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v3/system-dark.png">
+        <img src="docs/screenshots/v3/system-light.png" width="270" alt="System tab: CPU history chart above a temperature chart colored by thermal state, memory, top processes, battery, disk and network">
       </picture>
     </td>
     <td align="center" valign="top">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2/brew-dark.png">
-        <img src="docs/screenshots/v2/brew-light.png" width="270" alt="Brew tab: outdated formulae and casks with installed and latest versions">
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v3/brew-dark.png">
+        <img src="docs/screenshots/v3/brew-light.png" width="270" alt="Brew tab: outdated formulae and casks with installed and latest versions">
       </picture>
     </td>
     <td align="center" valign="top">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2/settings-dark.png">
-        <img src="docs/screenshots/v2/settings-light.png" width="270" alt="Settings: dot colors, brew check interval and launch at login">
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v3/settings-dark.png">
+        <img src="docs/screenshots/v3/settings-light.png" width="270" alt="Settings: dot colors, brew check interval and launch at login">
       </picture>
     </td>
   </tr>
@@ -36,7 +38,7 @@ MacBook Airs have no fan. Under sustained load, such as a long build, a video ex
 
 ## Features
 
-- **One dot, three states:** green when all is well, red when the Mac throttles, and blue when Homebrew updates are pending. The dots sit side by side when both apply.
+- **A cat with a status badge:** the menu bar shows a small cat with colored dots at its lower right. They're green when all is well, red when the Mac throttles, and blue when Homebrew updates are pending; both dots show when both apply. The cat turns black or white to match your menu bar.
 - **Load and heat on one timeline:** CPU load and chip temperature over the last 30 minutes. The temperature chart turns amber and red when macOS reports heat, so you can see which load caused it.
 - **The rest at a glance:** memory and swap, the top five processes, battery and power draw, free disk space, and network throughput.
 - **Homebrew updates:** outdated formulae and casks, refreshed every few hours and a few seconds after you upgrade in the terminal. It never changes anything itself.
@@ -73,7 +75,7 @@ open ~/Applications/MacVitals.app
 
 ### After installing
 
-The app has no Dock icon. Look for the colored dots in the menu bar. To start it automatically, open Settings (gear icon) and turn on **Launch at login**. If macOS asks, approve it in System Settings › General › Login Items.
+The app has no Dock icon. Look for the cat in the menu bar. To start it automatically, open Settings (gear icon) and turn on **Launch at login**. If macOS asks, approve it in System Settings › General › Login Items.
 
 ## Usage
 
@@ -81,10 +83,10 @@ The app has no Dock icon. Look for the colored dots in the menu bar. To start it
 
 | Menu bar | Meaning |
 | --- | --- |
-| <img src="docs/screenshots/v2/dots-normal.png" height="16" alt=""> | Normal |
-| <img src="docs/screenshots/v2/dots-throttling.png" height="16" alt=""> | Throttling: macOS is limiting performance because the Mac is too hot |
-| <img src="docs/screenshots/v2/dots-brew.png" height="16" alt=""> | Homebrew updates are pending |
-| <img src="docs/screenshots/v2/dots-both.png" height="16" alt=""> | Throttling and Homebrew updates pending |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v3/dots-normal-dark.png"><img src="docs/screenshots/v3/dots-normal-light.png" height="18" alt=""></picture> | Normal |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v3/dots-throttling-dark.png"><img src="docs/screenshots/v3/dots-throttling-light.png" height="18" alt=""></picture> | Throttling: macOS is limiting performance because the Mac is too hot |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v3/dots-brew-dark.png"><img src="docs/screenshots/v3/dots-brew-light.png" height="18" alt=""></picture> | Homebrew updates are pending |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v3/dots-both-dark.png"><img src="docs/screenshots/v3/dots-both-light.png" height="18" alt=""></picture> | Throttling and Homebrew updates pending |
 
 The colors can be changed in Settings.
 
@@ -118,20 +120,20 @@ Pick a style in Settings › Charts. It applies to both charts. Area is the defa
   <tr>
     <td align="center" valign="top">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2/chart-styles/area-dark.png">
-        <img src="docs/screenshots/v2/chart-styles/area-light.png" width="270" alt="Area style: CPU history above the temperature history colored by thermal state">
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v3/chart-styles/area-dark.png">
+        <img src="docs/screenshots/v3/chart-styles/area-light.png" width="270" alt="Area style: CPU history above the temperature history colored by thermal state">
       </picture>
     </td>
     <td align="center" valign="top">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2/chart-styles/line-dark.png">
-        <img src="docs/screenshots/v2/chart-styles/line-light.png" width="270" alt="Line style: CPU history above the temperature history colored by thermal state">
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v3/chart-styles/line-dark.png">
+        <img src="docs/screenshots/v3/chart-styles/line-light.png" width="270" alt="Line style: CPU history above the temperature history colored by thermal state">
       </picture>
     </td>
     <td align="center" valign="top">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v2/chart-styles/bars-dark.png">
-        <img src="docs/screenshots/v2/chart-styles/bars-light.png" width="270" alt="Bars style: CPU history above the temperature history colored by thermal state">
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/v3/chart-styles/bars-dark.png">
+        <img src="docs/screenshots/v3/chart-styles/bars-light.png" width="270" alt="Bars style: CPU history above the temperature history colored by thermal state">
       </picture>
     </td>
   </tr>
@@ -205,7 +207,9 @@ MacVitals doesn't collect or send any data. All readings stay on your Mac. The o
 
 ## Development
 
-README screenshots live in a versioned folder (`docs/screenshots/v2/`). Browsers cache README images by their path, so regenerated images under the same names can keep showing the old versions. When you update the screenshots, render them into a new folder such as `v3`, point the README at it, and delete the old one.
+The app icon and the menu bar cat come from the drawing in `Icon/cat-drawing.png`. After changing it, run `swift Icon/make-icons.swift` from the repo root. That regenerates `Resources/AppIcon.icns`, the README preview `Icon/AppIcon-256.png`, and the embedded menu bar image in `Sources/MacVitals/Views/CatImage.swift`.
+
+README screenshots live in a versioned folder (`docs/screenshots/v3/`). Browsers cache README images by their path, so regenerated images under the same names can keep showing the old versions. When you update the screenshots, render them into a new folder such as `v4`, point the README at it, and delete the old one.
 
 ```bash
 swift build                     # debug build

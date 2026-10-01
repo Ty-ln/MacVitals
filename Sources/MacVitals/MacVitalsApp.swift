@@ -23,7 +23,7 @@ struct MacVitalsApp: App {
         MenuBarExtra {
             DashboardView(state: state)
         } label: {
-            Image(nsImage: StatusDots.image(for: state.dots, settings: state.settings))
+            Image(nsImage: StatusDots.image(for: state.dots, settings: state.settings, dark: state.darkMode))
                 .accessibilityLabel(state.accessibilitySummary)
         }
         .menuBarExtraStyle(.window)
