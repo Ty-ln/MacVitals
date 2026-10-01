@@ -154,7 +154,7 @@ MacVitals needs no root access and no helper tools. Everything uses public APIs 
 
 ## Development
 
-README screenshots live in a versioned folder (`docs/screenshots/v2/`). GitHub ignores query strings on README images, so browsers keep showing cached copies until the path changes. When you update the screenshots, render them into a new folder such as `v3`, point the README at it, and delete the old one.
+README screenshots live in a versioned folder (`docs/screenshots/v2/`). Browsers cache README images by their path, so regenerated images under the same names can keep showing the old versions. When you update the screenshots, render them into a new folder such as `v3`, point the README at it, and delete the old one.
 
 ```bash
 swift build                     # debug build
