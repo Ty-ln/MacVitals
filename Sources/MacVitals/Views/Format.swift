@@ -36,6 +36,11 @@ enum Format {
         return formatter.localizedString(for: date, relativeTo: now)
     }
 
+    static func temperature(_ celsius: Double, unit: TemperatureUnit) -> String {
+        let value = unit == .celsius ? celsius : celsius * 9 / 5 + 32
+        return "\(Int(value.rounded())) \(unit.symbol)"
+    }
+
     static func duration(minutes: Int) -> String { "\(minutes / 60):" + String(format: "%02d", minutes % 60) }
 }
 

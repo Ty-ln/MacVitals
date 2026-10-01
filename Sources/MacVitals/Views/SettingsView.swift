@@ -8,10 +8,33 @@ struct SettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             SectionHeader(title: "Dot colors")
-            ColorRow(title: "Normal", dot: .normal, settings: settings)
-            ColorRow(title: "Throttling", dot: .throttling, settings: settings)
-            ColorRow(title: "Brew updates", dot: .brew, settings: settings)
+            ForEach([(StatusDot.normal, "Normal"), (.throttling, "Throttling"), (.brew, "Brew updates")], id: \.0) { dot, title in
+                SwatchRow(
+                    title: title,
+                    options: DotColor.allCases.map { ($0.rawValue, Color(nsColor: $0.nsColor), $0.rawValue.capitalized) },
+                    selection: Binding(
+                        get: { settings.colors[dot]?.rawValue ?? "" },
+                        set: { settings.colors[dot] = DotColor(rawValue: $0) }
+                    )
+                )
+            }
             Button("Reset colors") { settings.resetColors() }
+                .controlSize(.small)
+
+            SectionHeader(title: "Charts")
+            LabeledRow(title: "Style") {
+                Picker("Style", selection: $settings.chartStyle) {
+                    ForEach(ChartStyle.allCases) { Text($0.title).tag($0) }
+                }
+            }
+            SwatchRow(title: "CPU", options: chartOptions, selection: chartBinding(\.cpuChartColor))
+            SwatchRow(title: "Temperature", options: chartOptions, selection: chartBinding(\.temperatureChartColor))
+            LabeledRow(title: "Unit") {
+                Picker("Unit", selection: $settings.temperatureUnit) {
+                    ForEach(TemperatureUnit.allCases) { Text($0.symbol).tag($0) }
+                }
+            }
+            Button("Reset charts") { settings.resetCharts() }
                 .controlSize(.small)
 
             SectionHeader(title: "Homebrew")
@@ -37,32 +60,69 @@ struct SettingsView: View {
         }
         .font(.callout)
     }
+
+    private var chartOptions: [(String, Color, String)] {
+        ChartColor.all.map { color in
+            (color.rawValue, color.color, color == .accent ? "System accent color" : color.rawValue.capitalized)
+        }
+    }
+
+    private func chartBinding(_ keyPath: ReferenceWritableKeyPath<Settings, ChartColor>) -> Binding<String> {
+        Binding(
+            get: { settings[keyPath: keyPath].rawValue },
+            set: { if let color = ChartColor(rawValue: $0) { settings[keyPath: keyPath] = color } }
+        )
+    }
 }
 
-private struct ColorRow: View {
+private struct LabeledRow<Content: View>: View {
     let title: String
-    let dot: StatusDot
-    @Bindable var settings: Settings
+    @ViewBuilder let content: Content
 
     var body: some View {
         HStack {
             Text(title)
             Spacer()
-            HStack(spacing: 5) {
-                ForEach(DotColor.allCases) { color in
-                    let selected = settings.colors[dot] == color
-                    Circle()
-                        .fill(Color(nsColor: color.nsColor))
-                        .frame(width: 14, height: 14)
+            content
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+        }
+    }
+}
+
+/// A row of color swatches. The system accent swatch is drawn as a color wheel, like in System Settings.
+private struct SwatchRow: View {
+    let title: String
+    let options: [(id: String, color: Color, name: String)]
+    @Binding var selection: String
+
+    var body: some View {
+        HStack {
+            Text(title)
+            Spacer()
+            HStack(spacing: 4) {
+                ForEach(options, id: \.id) { option in
+                    let selected = selection == option.id
+                    swatch(option)
+                        .frame(width: 12, height: 12)
                         .padding(2)
                         .overlay(Circle().strokeBorder(selected ? Color.primary : .clear, lineWidth: 1.5))
                         .contentShape(Circle())
-                        .onTapGesture { settings.colors[dot] = color }
-                        .help(color.rawValue.capitalized)
-                        .accessibilityLabel("\(title): \(color.rawValue)")
+                        .onTapGesture { selection = option.id }
+                        .help(option.name)
+                        .accessibilityLabel("\(title): \(option.name)")
                         .accessibilityAddTraits(selected ? .isSelected : [])
                 }
             }
+        }
+    }
+
+    @ViewBuilder private func swatch(_ option: (id: String, color: Color, name: String)) -> some View {
+        if option.id == "accent" {
+            Circle().fill(AngularGradient(colors: [.red, .yellow, .green, .blue, .purple, .red], center: .center))
+        } else {
+            Circle().fill(option.color)
         }
     }
 }

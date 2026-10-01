@@ -35,7 +35,7 @@ A small menu bar app for MacBooks, built for fanless Airs. It shows system load,
 ## Requirements
 
 - macOS 14 (Sonoma) or newer
-- Apple Silicon. Intel Macs work too, but the CPU line shows a meaningless "E 0%".
+- Apple Silicon. Intel Macs work too, but the CPU line shows a meaningless "E 0%" and there is no temperature chart.
 - The Command Line Tools (`xcode-select --install`). You don't need Xcode.
 - [Homebrew](https://brew.sh) for the Brew tab. Without it, the tab shows a message and the rest of the app works normally.
 
@@ -73,7 +73,7 @@ Click the dots to open the dashboard.
 
 - **System:**
   - CPU load, split into performance and efficiency cores
-  - a 30-minute history: a CPU chart with the thermal state band underneath on the same time axis, so you can see which load heated the Mac
+  - a 30-minute history: CPU load, then chip temperature, then the thermal state band, all on the same time axis, so you can see which load heated the Mac and when macOS started throttling
   - memory used and swap
   - the top five processes
   - battery and power draw
@@ -85,8 +85,41 @@ Click the dots to open the dashboard.
   - The tab is read only. Run `brew upgrade` in your terminal to update.
 - **Settings** (gear icon):
   - dot colors
+  - chart style (area, line or bars), chart colors, and °C or °F
   - how often to check Homebrew (1–24 hours, 6 by default)
   - launch at login
+
+### Chart styles
+
+Pick a style in Settings › Charts. It applies to both charts. Area is the default.
+
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/chart-styles/area-dark.png">
+        <img src="docs/screenshots/chart-styles/area-light.png" width="270" alt="Area style: CPU and temperature history above the thermal band">
+      </picture>
+    </td>
+    <td align="center" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/chart-styles/line-dark.png">
+        <img src="docs/screenshots/chart-styles/line-light.png" width="270" alt="Line style: CPU and temperature history above the thermal band">
+      </picture>
+    </td>
+    <td align="center" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/chart-styles/bars-dark.png">
+        <img src="docs/screenshots/chart-styles/bars-light.png" width="270" alt="Bars style: CPU and temperature history above the thermal band">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">Area</td>
+    <td align="center">Line</td>
+    <td align="center">Bars</td>
+  </tr>
+</table>
 
 ## Update
 
@@ -112,11 +145,12 @@ The last line removes your saved settings.
 
 - **Throttling:** `ProcessInfo.thermalState`, the public signal macOS uses when it limits performance. `serious` and `critical` count as throttling. `fair` shows as amber in the dashboard only.
 - **CPU:** per-core tick deltas from `host_processor_info`. On Apple Silicon the efficiency cores come first.
+- **Temperature:** the hottest of the chip's die sensors (`PMU tdie…`), read through IOKit's HID event system. The chart's scale is fixed at 20–110 °C, so it shows how much headroom is left before throttling.
 - **Memory:** app memory + wired + compressed, the same as Activity Monitor's "Memory Used".
 - **Brew:** `brew update` + `brew outdated --json=v2`. This runs at launch, on the interval set in Settings, and when you click "Check now".
-- **Sampling:** every 10 s in the background and every 2 s while the dashboard is open. The last 30 minutes of CPU samples are kept for the chart. Top processes are only read while the dashboard is open.
+- **Sampling:** every 10 s in the background and every 2 s while the dashboard is open. The last 30 minutes of CPU and temperature samples are kept for the charts. Top processes are only read while the dashboard is open.
 
-Everything uses public APIs or `sysctl`, so MacVitals needs no root access and no helper tools.
+MacVitals needs no root access and no helper tools. Everything uses public APIs or `sysctl`, except temperature: macOS has no public temperature API on Apple Silicon, so MacVitals uses undocumented IOKit functions, as the open-source [Stats](https://github.com/exelban/stats) app does. If a future macOS update breaks them, only the temperature chart disappears.
 
 ## Development
 
@@ -129,6 +163,7 @@ MACVITALS_FAKE_THERMAL=serious ~/Applications/MacVitals.app/Contents/MacOS/MacVi
 
 # Render both tabs, settings, and the dot states to PNGs without opening anything.
 # --demo replaces all readings with sample data; this is how the README screenshots are made.
+# Add -chartStyle line or -chartStyle bars to render another chart style.
 .build/release/MacVitals --snapshot docs/screenshots --demo
 
 # Turn launch at login on or off from the command line

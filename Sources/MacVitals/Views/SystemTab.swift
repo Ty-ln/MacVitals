@@ -139,12 +139,16 @@ private struct ThermalBanner: View {
     }
 }
 
-/// CPU load chart with the thermal state band underneath, on one shared 30-minute time axis.
+/// CPU and temperature charts with the thermal state band underneath, on one shared 30-minute time axis.
 private struct CPUThermalHistory: View {
     let state: AppState
 
+    /// Fixed scale so the chart shows real headroom; Apple Silicon throttles around 95–105 °C.
+    private static let temperatureRange = 20.0...110.0
+
     var body: some View {
         let now = state.lastUpdate
+        let settings = state.settings
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline) {
                 Text("CPU").foregroundStyle(.secondary)
@@ -154,16 +158,31 @@ private struct CPUThermalHistory: View {
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
-            CPUSparkline(points: state.cpuHistory, now: now)
+            HistoryChart(points: state.cpuHistory, now: now, range: 0...1,
+                         style: settings.chartStyle, color: settings.cpuChartColor.color)
                 .frame(height: 36)
                 .padding(.bottom, 4)
 
-            HStack {
-                Label("Thermal", systemImage: "thermometer.medium").foregroundStyle(.secondary)
-                Spacer()
-                Text(state.thermalState.label).foregroundStyle(state.settings.color(for: state.thermalState))
+            if let temperature = state.temperature {
+                HStack {
+                    Label("Temperature", systemImage: "thermometer.medium").foregroundStyle(.secondary)
+                    Spacer()
+                    Text(Format.temperature(temperature, unit: settings.temperatureUnit))
+                        .monospacedDigit()
+                        .help("Hottest SoC die sensor")
+                }
+                HistoryChart(points: state.temperatureHistory, now: now, range: Self.temperatureRange,
+                             style: settings.chartStyle, color: settings.temperatureChartColor.color)
+                    .frame(height: 36)
+                    .padding(.bottom, 4)
             }
-            ThermalBand(history: state.thermalHistory, now: now, settings: state.settings)
+
+            HStack {
+                Label("Thermal", systemImage: "flame").foregroundStyle(.secondary)
+                Spacer()
+                Text(state.thermalState.label).foregroundStyle(settings.color(for: state.thermalState))
+            }
+            ThermalBand(history: state.thermalHistory, now: now, settings: settings)
                 .frame(height: 6)
             HStack {
                 Text("30 min ago")
@@ -177,30 +196,48 @@ private struct CPUThermalHistory: View {
     }
 }
 
-/// Area chart of CPU load. Gaps longer than a minute (sleep) break the line.
-private struct CPUSparkline: View {
-    let points: [CPUPoint]
+/// A 30-minute history drawn as an area, a line, or bars. Gaps longer than a minute (sleep) break
+/// the area and line styles.
+private struct HistoryChart: View {
+    let points: [HistoryPoint]
     let now: Date
+    let range: ClosedRange<Double>
+    let style: ChartStyle
+    let color: Color
+
+    private static let barCount = 60
 
     var body: some View {
         GeometryReader { geo in
-            let segments = self.segments(in: geo.size)
-            ZStack {
-                ForEach(segments.indices, id: \.self) { i in
-                    area(segments[i], height: geo.size.height).fill(Color.accentColor.opacity(0.18))
-                    line(segments[i]).stroke(Color.accentColor, style: StrokeStyle(lineWidth: 1.5, lineJoin: .round))
+            switch style {
+            case .area, .line:
+                let segments = self.segments(in: geo.size)
+                ZStack {
+                    ForEach(segments.indices, id: \.self) { i in
+                        if style == .area {
+                            area(segments[i], height: geo.size.height).fill(color.opacity(0.18))
+                        }
+                        line(segments[i]).stroke(color, style: StrokeStyle(lineWidth: 1.5, lineJoin: .round))
+                    }
                 }
+            case .bars:
+                bars(in: geo.size).fill(color.opacity(0.85))
             }
         }
     }
 
+    private var start: Date { now.addingTimeInterval(-ThermalMonitor.window) }
+
+    private func normalized(_ value: Double) -> Double {
+        min(max((value - range.lowerBound) / (range.upperBound - range.lowerBound), 0), 1)
+    }
+
     private func segments(in size: CGSize) -> [[CGPoint]] {
-        let start = now.addingTimeInterval(-ThermalMonitor.window)
         var result: [[CGPoint]] = []
         var previous: Date?
         for point in points where point.date >= start {
             let x = point.date.timeIntervalSince(start) / ThermalMonitor.window * size.width
-            let y = 1 + (size.height - 2) * (1 - min(max(point.load, 0), 1))
+            let y = 1 + (size.height - 2) * (1 - normalized(point.value))
             if let previous, point.date.timeIntervalSince(previous) <= 60, !result.isEmpty {
                 result[result.count - 1].append(CGPoint(x: x, y: y))
             } else {
@@ -222,6 +259,28 @@ private struct CPUSparkline: View {
             path.addLines(points)
             path.addLine(to: CGPoint(x: last.x, y: height))
             path.closeSubpath()
+        }
+    }
+
+    /// Averages the samples into fixed time buckets, one bar each. Empty buckets stay empty.
+    private func bars(in size: CGSize) -> Path {
+        let bucket = ThermalMonitor.window / Double(Self.barCount)
+        var sums = [Double](repeating: 0, count: Self.barCount)
+        var counts = [Int](repeating: 0, count: Self.barCount)
+        for point in points where point.date >= start {
+            let i = min(Int(point.date.timeIntervalSince(start) / bucket), Self.barCount - 1)
+            sums[i] += point.value
+            counts[i] += 1
+        }
+        let width = size.width / CGFloat(Self.barCount)
+        return Path { path in
+            for i in 0..<Self.barCount where counts[i] > 0 {
+                let height = max(size.height * normalized(sums[i] / Double(counts[i])), 1)
+                path.addRoundedRect(
+                    in: CGRect(x: CGFloat(i) * width + 0.5, y: size.height - height, width: max(width - 1, 1), height: height),
+                    cornerSize: CGSize(width: 1, height: 1)
+                )
+            }
         }
     }
 }

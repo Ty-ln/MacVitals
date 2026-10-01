@@ -6,9 +6,10 @@ struct CPUSample {
     var efficiency: Double = 0   // 0...1
 }
 
-struct CPUPoint {
+/// One sample in a chart history (CPU load 0...1, or temperature in °C).
+struct HistoryPoint {
     let date: Date
-    let load: Double  // 0...1
+    let value: Double
 }
 
 /// Per-core load from host_processor_info tick deltas.

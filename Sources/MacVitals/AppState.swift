@@ -6,7 +6,9 @@ import Observation
 @Observable
 final class AppState {
     var cpu = CPUSample()
-    var cpuHistory: [CPUPoint] = []
+    var cpuHistory: [HistoryPoint] = []
+    var temperature: Double?
+    var temperatureHistory: [HistoryPoint] = []
     var memory = MemorySample()
     var thermalState: ProcessInfo.ThermalState
     var thermalHistory: [ThermalEvent] = []
@@ -34,6 +36,7 @@ final class AppState {
     @ObservationIgnored private let cpuMonitor = CPUMonitor()
     @ObservationIgnored private let netMonitor = NetMonitor()
     @ObservationIgnored private let thermal = ThermalMonitor()
+    @ObservationIgnored private let temperatureMonitor = TemperatureMonitor()
     @ObservationIgnored private var timer: Timer?
 
     init() {
@@ -63,7 +66,8 @@ final class AppState {
 
     func refresh() {
         cpu = cpuMonitor.sample()
-        recordCPU()
+        temperature = temperatureMonitor.sample()
+        recordHistory()
         memory = MemoryMonitor.sample()
         power = PowerMonitor.sample()
         disk = DiskMonitor.sample()
@@ -104,13 +108,17 @@ final class AppState {
     }
 
     /// Keeps the same 30-minute window as the thermal history.
-    private func recordCPU() {
+    private func recordHistory() {
         let now = Date()
-        cpuHistory.append(CPUPoint(date: now, load: cpu.total))
         let cutoff = now.addingTimeInterval(-ThermalMonitor.window)
-        if let first = cpuHistory.firstIndex(where: { $0.date >= cutoff }), first > 0 {
-            cpuHistory.removeFirst(first)
+        func append(_ value: Double, to history: inout [HistoryPoint]) {
+            history.append(HistoryPoint(date: now, value: value))
+            if let first = history.firstIndex(where: { $0.date >= cutoff }), first > 0 {
+                history.removeFirst(first)
+            }
         }
+        append(cpu.total, to: &cpuHistory)
+        if let temperature { append(temperature, to: &temperatureHistory) }
     }
 
     /// Replaces every reading with made-up sample data, for `--snapshot --demo`.
@@ -121,15 +129,22 @@ final class AppState {
         cpuHistory = stride(from: window, through: 0, by: -10).map { ago in
             let t = 1 - ago / window
             let spike = exp(-pow((t - 0.75) / 0.12, 2)) * 0.65
-            return CPUPoint(date: now.addingTimeInterval(-ago), load: min(0.12 + spike + 0.05 * sin(t * 40), 1))
+            return HistoryPoint(date: now.addingTimeInterval(-ago), value: min(0.12 + spike + 0.05 * sin(t * 40), 1))
         }
+        // The die heats up after the load and cools down more slowly.
+        temperatureHistory = stride(from: window, through: 0, by: -10).map { ago in
+            let t = 1 - ago / window
+            let heat = exp(-pow((t - 0.84) / 0.16, 2)) * 58
+            return HistoryPoint(date: now.addingTimeInterval(-ago), value: 36 + heat + 1.5 * sin(t * 25))
+        }
+        temperature = temperatureHistory.last?.value
         thermalHistory = [
             ThermalEvent(date: now.addingTimeInterval(-window), state: .nominal),
             ThermalEvent(date: now.addingTimeInterval(-window * 0.42), state: .fair),
             ThermalEvent(date: now.addingTimeInterval(-window * 0.18), state: .serious),
         ]
         thermalState = .serious
-        cpu = CPUSample(total: cpuHistory.last?.load ?? 0, performance: 0.41, efficiency: 0.22)
+        cpu = CPUSample(total: cpuHistory.last?.value ?? 0, performance: 0.41, efficiency: 0.22)
 
         let gb: UInt64 = 1 << 30, mb: UInt64 = 1 << 20
         memory = MemorySample(used: gb * 112 / 10, total: 16 * gb, swapUsed: gb * 8 / 10, pressure: .normal)
