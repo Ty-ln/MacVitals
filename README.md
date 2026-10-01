@@ -12,7 +12,7 @@ A small menu bar app for MacBooks, built for fanless Airs. It shows system load,
 ## Install
 
 ```bash
-git clone <repo-url> MacVitals
+git clone https://github.com/Ty-ln/MacVitals.git
 cd MacVitals
 ./build.sh
 open ~/Applications/MacVitals.app
@@ -100,3 +100,7 @@ MACVITALS_FAKE_THERMAL=serious ~/Applications/MacVitals.app/Contents/MacOS/MacVi
 # Turn launch at login on or off from the command line
 ~/Applications/MacVitals.app/Contents/MacOS/MacVitals --login-item on
 ```
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
