@@ -2,6 +2,8 @@
 
 A small menu bar app for MacBooks, built for fanless Airs. It shows system load, tells you when macOS starts thermal throttling, and lists pending Homebrew updates.
 
+MacBook Airs have no fan. Under sustained load, such as a long build, a video export or a pile of browser tabs, the chip heats up and macOS quietly lowers its speed to cool it down. Everything keeps working, just slower, and nothing tells you. MacVitals sits in your menu bar as a single colored dot. The dot turns red as soon as macOS starts throttling, and the dashboard shows you what caused it. It also keeps an eye on Homebrew, so you know when updates are waiting.
+
 <table>
   <tr>
     <td align="center" valign="top">
@@ -32,6 +34,15 @@ A small menu bar app for MacBooks, built for fanless Airs. It shows system load,
 
 <sub>Screenshots use demo data, rendered with <code>--snapshot --demo</code>.</sub>
 
+## Features
+
+- **One dot, three states:** green when all is well, red when the Mac throttles, and blue when Homebrew updates are pending. The dots sit side by side when both apply.
+- **Load and heat on one timeline:** CPU load and chip temperature over the last 30 minutes. The temperature chart turns amber and red when macOS reports heat, so you can see which load caused it.
+- **The rest at a glance:** memory and swap, the top five processes, battery and power draw, free disk space, and network throughput.
+- **Homebrew updates:** outdated formulae and casks, refreshed every few hours and a few seconds after you upgrade in the terminal. It never changes anything itself.
+- **Light on resources:** about 0% CPU and 70 MB of memory while idle.
+- **Your look:** dot colors, chart style, chart color and temperature unit can all be changed in Settings.
+
 ## Requirements
 
 - macOS 14 (Sonoma) or newer
@@ -43,16 +54,16 @@ A small menu bar app for MacBooks, built for fanless Airs. It shows system load,
 
 ### Download (Apple Silicon)
 
-1. Download `MacVitals-<version>.zip` from the [latest release](https://github.com/Ty-ln/MacVitals/releases/latest) and unzip it.
+1. Download `MacVitals-<version>.zip` from the [latest release](../../releases/latest) and unzip it.
 2. Move `MacVitals.app` to your Applications folder and open it.
 3. macOS blocks it the first time, because the app isn't notarized by Apple. Open System Settings › Privacy & Security, scroll to the message about MacVitals, and click **Open Anyway**. After that it opens normally.
 
 ### Build from source
 
-You need the Command Line Tools for this. It works on Intel Macs too, and macOS doesn't block an app you built yourself.
+You need the Command Line Tools for this. It works on Intel Macs too, and macOS doesn't block an app you built yourself. Copy the repository URL from the green **Code** button at the top of this page.
 
 ```bash
-git clone https://github.com/Ty-ln/MacVitals.git
+git clone <repository URL> MacVitals
 cd MacVitals
 ./build.sh
 open ~/Applications/MacVitals.app
@@ -144,16 +155,37 @@ open ~/Applications/MacVitals.app
 
 ## Uninstall
 
-These commands use the path `build.sh` installs to. If you downloaded the app, replace `~/Applications` with `/Applications`.
+These commands use the path `build.sh` installs to. If you downloaded the app, set `APP=/Applications/MacVitals.app` instead.
 
 ```bash
-~/Applications/MacVitals.app/Contents/MacOS/MacVitals --login-item off
+APP=~/Applications/MacVitals.app
+"$APP/Contents/MacOS/MacVitals" --login-item off
 pkill -x MacVitals
-rm -rf ~/Applications/MacVitals.app
-defaults delete io.github.macvitals
+defaults delete "$(defaults read "$APP/Contents/Info" CFBundleIdentifier)"
+rm -rf "$APP"
 ```
 
-The last line removes your saved settings.
+The `defaults delete` line removes your saved settings. It reads the app's ID from the app itself, so run it before deleting the app.
+
+## FAQ
+
+**What is thermal throttling?**
+When the chip gets too hot, macOS lowers its clock speed until it cools down. On a Mac with a fan, the fan usually spins up first. A MacBook Air has no fan, so throttling is its only way to cool down. Your Mac isn't damaged by it, but it gets noticeably slower.
+
+**Does MacVitals itself slow down my Mac or drain the battery?**
+No. In the background it reads a few system counters every 10 seconds, which uses about 0% CPU and 70 MB of memory. It only lists processes and samples every 2 seconds while the dashboard is open.
+
+**Why is it throttling when the temperature doesn't look that high?**
+MacVitals shows the chip's hottest sensor, but macOS decides about throttling from more than that, for example how warm the case gets. The red dot always follows macOS's own decision, so it's the reliable signal.
+
+**Does it work on a MacBook Pro?**
+Yes. A Pro has fans, so it throttles much later and the dot will rarely turn red. When it does, the Mac really is at its limit.
+
+**Will it update my Homebrew packages?**
+No. The Brew tab is read only: it lists what's outdated, and you decide when to run `brew upgrade`.
+
+**Why does macOS block the downloaded app?**
+Apps from outside the App Store need to be notarized by Apple, which requires a paid developer account. MacVitals isn't notarized, so macOS asks you to confirm once (see [Install](#install)). If you'd rather not do that, build it from source.
 
 ## How it measures
 
@@ -166,6 +198,10 @@ The last line removes your saved settings.
 - **Sampling:** every 10 s in the background and every 2 s while the dashboard is open. The last 30 minutes of CPU and temperature samples are kept for the charts. Top processes are only read while the dashboard is open.
 
 MacVitals needs no root access and no helper tools. Everything uses public APIs or `sysctl`, except temperature: macOS has no public temperature API on Apple Silicon, so MacVitals uses undocumented IOKit functions, as the open-source [Stats](https://github.com/exelban/stats) app does. If a future macOS update breaks them, only the temperature chart disappears.
+
+## Privacy
+
+MacVitals doesn't collect or send any data. All readings stay on your Mac. The only network access is Homebrew's own `brew update`, which MacVitals runs to learn about new versions (with Homebrew's analytics turned off). Your settings are stored locally in your Mac's user preferences (`~/Library/Preferences`).
 
 ## Development
 
