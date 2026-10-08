@@ -6,7 +6,8 @@ struct ThermalEvent {
 }
 
 /// Tracks ProcessInfo.thermalState, the only public signal for throttling on fanless Macs.
-/// Set MACVITALS_FAKE_THERMAL=fair|serious|critical (env) or the `fakeThermal` default to test.
+/// Set MACVITALS_FAKE_THERMAL=fair|serious|critical to test. Only the environment counts, not a stored
+/// default, so a test value can't outlive the launch it was meant for.
 final class ThermalMonitor {
     static let window: TimeInterval = 30 * 60
 
@@ -36,9 +37,7 @@ final class ThermalMonitor {
     }
 
     private static let fakeState: ProcessInfo.ThermalState? = {
-        let raw = ProcessInfo.processInfo.environment["MACVITALS_FAKE_THERMAL"]
-            ?? UserDefaults.standard.string(forKey: "fakeThermal")
-        switch raw?.lowercased() {
+        switch ProcessInfo.processInfo.environment["MACVITALS_FAKE_THERMAL"]?.lowercased() {
         case "nominal": return .nominal
         case "fair": return .fair
         case "serious": return .serious
@@ -49,6 +48,9 @@ final class ThermalMonitor {
 }
 
 extension ProcessInfo.ThermalState {
+    /// `serious` and `critical` are when macOS limits performance.
+    var isThrottling: Bool { rawValue >= ProcessInfo.ThermalState.serious.rawValue }
+
     var label: String {
         switch self {
         case .nominal: "nominal"

@@ -21,6 +21,10 @@ enum DiskMonitor {
 
 /// Throughput from per-interface byte counters. The counters are 32-bit and wrap, so deltas are per interface.
 final class NetMonitor {
+    /// Loopback, plus interfaces whose traffic isn't network traffic of its own: VPN tunnels and bridges
+    /// carry what's already counted on the physical interface, AWDL and LLW are AirDrop and Continuity.
+    private static let skipped = ["lo", "utun", "ipsec", "gif", "stf", "bridge", "awdl", "llw"]
+
     private var previous: [String: (rx: UInt32, tx: UInt32)] = [:]
     private var lastDate: Date?
 
@@ -32,7 +36,7 @@ final class NetMonitor {
                 let ifa = ptr.pointee
                 guard ifa.ifa_addr?.pointee.sa_family == UInt8(AF_LINK), let data = ifa.ifa_data else { continue }
                 let name = String(cString: ifa.ifa_name)
-                guard !name.hasPrefix("lo") else { continue }
+                guard !Self.skipped.contains(where: name.hasPrefix) else { continue }
                 let stats = data.assumingMemoryBound(to: if_data.self).pointee
                 current[name] = (stats.ifi_ibytes, stats.ifi_obytes)
             }

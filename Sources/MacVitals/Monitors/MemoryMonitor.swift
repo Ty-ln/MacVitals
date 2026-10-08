@@ -27,7 +27,8 @@ enum MemoryMonitor {
         }
         if kr == KERN_SUCCESS {
             let page = UInt64(vm_kernel_page_size)
-            let app = UInt64(stats.internal_page_count) - UInt64(stats.purgeable_count)
+            // The counters aren't read atomically, so purgeable can briefly exceed internal; don't underflow.
+            let app = UInt64(stats.internal_page_count) - min(UInt64(stats.purgeable_count), UInt64(stats.internal_page_count))
             result.used = (app + UInt64(stats.wire_count) + UInt64(stats.compressor_page_count)) * page
         }
         if let swap = Sysctl.value("vm.swapusage", as: xsw_usage.self) {

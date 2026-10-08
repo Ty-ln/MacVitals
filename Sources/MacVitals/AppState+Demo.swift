@@ -1,0 +1,55 @@
+import Foundation
+
+extension AppState {
+    /// Replaces every reading with made-up sample data, for `--snapshot --demo`.
+    /// Used for the README screenshots, so they don't show this Mac's processes or packages.
+    func seedDemo() {
+        let now = Date()
+        let window = ThermalMonitor.window
+        cpuHistory = stride(from: window, through: 0, by: -10).map { ago in
+            let t = 1 - ago / window
+            let load = 0.6 / (1 + exp(-(t - 0.5) / 0.03))
+            return HistoryPoint(date: now.addingTimeInterval(-ago), value: min(0.12 + load + 0.05 * sin(t * 40), 1))
+        }
+        // The die heats up after the load starts and keeps climbing towards throttling.
+        temperatureHistory = stride(from: window, through: 0, by: -10).map { ago in
+            let t = 1 - ago / window
+            let heat = 58 / (1 + exp(-(t - 0.6) / 0.08))
+            return HistoryPoint(date: now.addingTimeInterval(-ago), value: 36 + heat + 1.2 * sin(t * 25))
+        }
+        temperature = temperatureHistory.last?.value
+        thermalHistory = [
+            ThermalEvent(date: now.addingTimeInterval(-window), state: .nominal),
+            ThermalEvent(date: now.addingTimeInterval(-window * 0.42), state: .fair),
+            ThermalEvent(date: now.addingTimeInterval(-window * 0.18), state: .serious),
+        ]
+        thermalState = .serious
+        cpu = CPUSample(total: cpuHistory.last?.value ?? 0, performance: 0.94, efficiency: 0.64, hasCoreTypes: true)
+
+        let gb: UInt64 = 1 << 30, mb: UInt64 = 1 << 20
+        memory = MemorySample(used: gb * 112 / 10, total: 16 * gb, swapUsed: gb * 8 / 10, pressure: .normal)
+        processes = [
+            ProcessUsage(id: 1, name: "Xcode", cpu: 182, memory: gb * 21 / 10),
+            ProcessUsage(id: 2, name: "Google Chrome Helper", cpu: 64, memory: gb * 14 / 10),
+            ProcessUsage(id: 3, name: "node", cpu: 31, memory: 620 * mb),
+            ProcessUsage(id: 4, name: "WindowServer", cpu: 18, memory: 150 * mb),
+            ProcessUsage(id: 5, name: "Spotify", cpu: 6, memory: 310 * mb),
+        ]
+        power = PowerSample(percent: 64, isCharging: false, onAdapter: false,
+                            minutesRemaining: 190, watts: -14.2, lowPowerMode: false)
+        disk = DiskSample(free: 212_000_000_000, total: 494_000_000_000)
+        net = NetSample(downPerSecond: 1_200_000, upPerSecond: 80_000)
+
+        brew = BrewResult(
+            formulae: [
+                OutdatedPackage(name: "node", installed: "24.8.0", latest: "24.9.1"),
+                OutdatedPackage(name: "git", installed: "2.51.0", latest: "2.51.1"),
+                OutdatedPackage(name: "ffmpeg", installed: "8.0", latest: "8.0.1"),
+            ],
+            casks: [OutdatedPackage(name: "visual-studio-code", installed: "1.104.2", latest: "1.105.0")]
+        )
+        brewError = nil
+        brewChecking = false
+        brewLastChecked = now.addingTimeInterval(-38 * 60)
+    }
+}

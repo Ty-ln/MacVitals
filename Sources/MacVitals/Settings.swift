@@ -87,6 +87,15 @@ final class Settings {
 
     func color(for dot: StatusDot) -> NSColor { (colors[dot] ?? Self.defaults[dot]!).nsColor }
 
+    /// Nominal and throttling follow the chosen dot colors; fair (warm) stays orange.
+    func color(for thermal: ProcessInfo.ThermalState) -> Color {
+        switch thermal {
+        case .nominal: Color(nsColor: color(for: .normal))
+        case .fair: .orange
+        default: Color(nsColor: color(for: .throttling))
+        }
+    }
+
     func resetColors() { colors = Self.defaults }
 
     func resetCharts() {

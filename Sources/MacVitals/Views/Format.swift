@@ -43,14 +43,3 @@ enum Format {
 
     static func duration(minutes: Int) -> String { "\(minutes / 60):" + String(format: "%02d", minutes % 60) }
 }
-
-extension Settings {
-    /// Nominal and throttling follow the chosen dot colors; fair (warm) stays orange.
-    func color(for thermal: ProcessInfo.ThermalState) -> Color {
-        switch thermal {
-        case .nominal: Color(nsColor: color(for: .normal))
-        case .fair: .orange
-        default: Color(nsColor: color(for: .throttling))
-        }
-    }
-}
